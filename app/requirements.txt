@@ -1,0 +1,11 @@
+# Dependencias de la app publicada en Streamlit Community Cloud.
+# Community Cloud usa este archivo (junto al punto de entrada) en lugar del requirements.txt
+# de la raíz, que incluye librerías pesadas del pipeline (PyTorch, Spark, LightGBM) que la
+# app no necesita.
+streamlit==1.67.0
+plotly>=5.0
+pandas>=2.0
+duckdb>=1.1
+pyarrow>=14
+pyyaml>=6.0
+requests>=2.28

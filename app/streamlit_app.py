@@ -1,8 +1,11 @@
 """Prototipo de consulta para auditores: prioridad de auditoría por proceso y sus factores.
 
-Ejecutar (después de correr el pipeline):
+Ejecutar:
     streamlit run app/streamlit_app.py
     streamlit run app/streamlit_app.py -- --data-dir D:/dncp_lake   # data lake en otra carpeta
+
+Si el data lake no tiene la capa gold (por ejemplo, en Streamlit Community Cloud), la app usa
+la copia publicada en app/datos, que se actualiza con scripts/exportar_datos_app.py.
 """
 
 import os
@@ -20,23 +23,27 @@ import streamlit as st
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "src"))
 
-from dncp_riesgo.almacenamiento import DataLake  # noqa: E402
+from dncp_riesgo.almacenamiento import TABLAS_APP, DataLake  # noqa: E402
 from dncp_riesgo.config import cargar_config  # noqa: E402
 
 st.set_page_config(page_title="Riesgo en contrataciones públicas", page_icon="🔎", layout="wide")
 
-TABLAS = ["puntajes", "evaluacion_detectores", "evaluacion_supervisados", "decisiones_modelos",
-          "validacion_banderas", "perfil_prioridad", "series_mensuales", "pronosticos", "redes_pares",
-          "redes_comunidades", "redes_hhi_entidades", "inventario_volumen"]
+DATOS_PUBLICADOS = Path(__file__).resolve().parent / "datos"
 
 
 @st.cache_data(show_spinner="Leyendo la capa gold del data lake…")
 def cargar():
-    lake = DataLake(cargar_config()["datos"]["dir"])
-    return {n: lake.leer_gold(n) for n in TABLAS if lake.existe("gold", n)}
+    lake = DataLake(cargar_config()["datos"]["dir"], crear=False)
+    fuente = f"data lake local ({lake.raiz})"
+    if not lake.existe("gold", "puntajes") and (DATOS_PUBLICADOS / "gold" / "puntajes").exists():
+        lake = DataLake(DATOS_PUBLICADOS, crear=False)
+        fecha = DATOS_PUBLICADOS / "FECHA.txt"
+        fuente = "copia publicada en el repositorio" + (f", actualizada el {fecha.read_text().strip()}"
+                                                         if fecha.exists() else "")
+    return {n: lake.leer_gold(n) for n in TABLAS_APP if lake.existe("gold", n)}, fuente
 
 
-datos = cargar()
+datos, fuente_datos = cargar()
 if "puntajes" not in datos:
     st.error("No hay puntajes en la capa gold. Ejecute primero: `python scripts/ejecutar_pipeline.py`")
     st.stop()
@@ -67,7 +74,8 @@ if proveedor:
 st.title("🔎 Priorización de auditorías en contrataciones públicas — DNCP Paraguay")
 st.caption("**Prioridad** = riesgo de integridad (reglas validadas + detector de anomalías) ponderado por el monto "
            "adjudicado. El **riesgo de impugnación** se muestra aparte: mide conflictividad, no irregularidad. "
-           "Es un insumo para planificar auditorías, no una determinación de irregularidades.")
+           "Indica qué procesos conviene auditar primero; la confirmación de una irregularidad corresponde a "
+           f"la auditoría. Datos: {fuente_datos}.")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Procesos filtrados", f"{len(f):,}".replace(",", "."))
 c2.metric("Prioridad alta", f"{(f['nivel'] == 'Alto').sum():,}".replace(",", "."))
@@ -81,7 +89,7 @@ t1, t2, t3, t4, t5 = st.tabs(["Ranking", "Detalle del proceso", "Tendencias", "R
 with t1:
     cols = ["prioridad", "nivel", "puntaje_integridad", "pct_impugnacion", "fecha_ref", "comprador_nombre",
             "proveedor_nombre", "titulo", "metodo_grupo", "monto_mm", "n_oferentes", "banderas_activas"]
-    st.dataframe(f.sort_values("prioridad", ascending=False)[cols].head(500), use_container_width=True,
+    st.dataframe(f.sort_values("prioridad", ascending=False)[cols].head(500), width="stretch",
                  hide_index=True, column_config={
                      "prioridad": st.column_config.ProgressColumn("Prioridad", min_value=0, max_value=100, format="%.0f"),
                      "puntaje_integridad": st.column_config.NumberColumn("Integridad", format="%.0f"),
@@ -91,7 +99,7 @@ with t1:
                  })
     st.plotly_chart(px.histogram(f, x="prioridad", color="nivel", nbins=50, title="Distribución de la prioridad",
                                  color_discrete_map={"Alto": "#c0392b", "Medio": "#e67e22", "Bajo": "#7f8c8d"}),
-                    use_container_width=True)
+                    width="stretch")
 
 with t2:
     top = f.sort_values("prioridad", ascending=False).head(300)
@@ -129,30 +137,30 @@ with t3:
                 fig.add_trace(go.Scatter(x=pr["mes"], y=pr["pronostico"], name=f"Pronóstico ({pr['modelo'].iloc[0]})",
                                          line=dict(color="#c0392b", width=3)))
         fig.update_layout(title=f"Serie mensual: {var}")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
 with t4:
     if "redes_pares" in datos:
         pares = datos["redes_pares"]
         st.subheader("Pares de proveedores con patrón de rotación o de oferta de cobertura")
-        st.dataframe(pares[pares["puntaje_colusion"] > 0].head(200), use_container_width=True, hide_index=True)
+        st.dataframe(pares[pares["puntaje_colusion"] > 0].head(200), width="stretch", hide_index=True)
     if "redes_hhi_entidades" in datos:
         st.subheader("Concentración de proveedores por entidad (HHI)")
-        st.dataframe(datos["redes_hhi_entidades"].head(100), use_container_width=True, hide_index=True)
+        st.dataframe(datos["redes_hhi_entidades"].head(100), width="stretch", hide_index=True)
     if "redes_comunidades" in datos:
         st.subheader("Comunidades de co-participación (Louvain)")
-        st.dataframe(datos["redes_comunidades"].head(50), use_container_width=True, hide_index=True)
+        st.dataframe(datos["redes_comunidades"].head(50), width="stretch", hide_index=True)
 
 with t5:
     if "decisiones_modelos" in datos:
         st.subheader("Algoritmos elegidos y por qué")
-        st.dataframe(datos["decisiones_modelos"], use_container_width=True, hide_index=True)
+        st.dataframe(datos["decisiones_modelos"], width="stretch", hide_index=True)
     if "evaluacion_detectores" in datos:
         st.subheader("Detectores de anomalías: prueba temporal 2025")
-        st.dataframe(datos["evaluacion_detectores"], use_container_width=True, hide_index=True)
+        st.dataframe(datos["evaluacion_detectores"], width="stretch", hide_index=True)
     if "evaluacion_supervisados" in datos:
         st.subheader("Riesgo de impugnación: prueba temporal 2025 (con líneas base)")
-        st.dataframe(datos["evaluacion_supervisados"], use_container_width=True, hide_index=True)
+        st.dataframe(datos["evaluacion_supervisados"], width="stretch", hide_index=True)
     if "validacion_banderas" in datos:
         st.subheader("Validación de constructo de las banderas rojas")
-        st.dataframe(datos["validacion_banderas"], use_container_width=True, hide_index=True)
+        st.dataframe(datos["validacion_banderas"], width="stretch", hide_index=True)

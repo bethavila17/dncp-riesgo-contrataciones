@@ -32,15 +32,20 @@ duckdb.execute("SET enable_progress_bar = false")
 TABLAS_SILVER = ["procesos", "oferentes", "adjudicaciones", "contratos", "items", "partes", "quejas"]
 # Tablas de otras fuentes
 TABLAS_EXTERNAS = ["protestas_dncp", "macro"]
+# Tablas gold que usa la app de consulta (se publican en app/datos para la versión en línea)
+TABLAS_APP = ["puntajes", "evaluacion_detectores", "evaluacion_supervisados", "decisiones_modelos",
+              "validacion_banderas", "perfil_prioridad", "series_mensuales", "pronosticos", "redes_pares",
+              "redes_comunidades", "redes_hhi_entidades", "inventario_volumen"]
 
 
 class DataLake:
     CAPAS = ("bronze", "silver", "gold")
 
-    def __init__(self, raiz: str | Path):
+    def __init__(self, raiz: str | Path, crear: bool = True):
         self.raiz = Path(raiz)
-        for capa in self.CAPAS:
-            (self.raiz / capa).mkdir(parents=True, exist_ok=True)
+        if crear:
+            for capa in self.CAPAS:
+                (self.raiz / capa).mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------ rutas
     def ruta(self, capa: str, *partes: str) -> Path:

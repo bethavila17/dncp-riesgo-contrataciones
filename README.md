@@ -119,7 +119,10 @@ Las protestas miden **conflictividad**, no irregularidad (crecen con la cantidad
 │   ├── graficos.py              # estilo común de las figuras
 │   └── pipeline.py              # orquestador de las etapas
 ├── notebooks/                   # 00 a 06, ejecutables en Google Colab (con salidas)
-├── app/streamlit_app.py         # prototipo de consulta para auditores
+├── app/                         # prototipo de consulta para auditores (Streamlit)
+│   ├── streamlit_app.py
+│   ├── requirements.txt         # dependencias livianas para publicarla en línea
+│   └── datos/gold/              # copia de las tablas que muestra la app (~3 MB)
 ├── informe/                     # informe (Word/PDF), figuras y su generador
 ├── scripts/ejecutar_pipeline.py # ejecución completa desde la terminal
 ├── tests/                       # pruebas unitarias (pytest)
@@ -159,6 +162,23 @@ streamlit run app/streamlit_app.py -- --data-dir C:/dncp_lake
 Opciones útiles: `--anios 2025` (prueba rápida con un año), `--etapas gold modelos` (recalcular sin volver a descargar). Pruebas: `pytest -q`. Informe: `python informe/generar_figuras.py C:/dncp_lake` y luego `python informe/generar_informe.py C:/dncp_lake`.
 
 > Conviene ubicar el data lake fuera de carpetas sincronizadas (OneDrive, Dropbox): ocupa ~1,5 GB.
+
+### App en línea (Streamlit Community Cloud)
+
+El data lake completo no se versiona, pero la app trae en [`app/datos/gold`](app/datos) una copia de las 12 tablas que muestra (~3 MB). Si no encuentra la capa gold en el data lake, usa esa copia, así que se puede publicar sin ejecutar el pipeline:
+
+1. En [share.streamlit.io](https://share.streamlit.io), ingresar con la cuenta de GitHub.
+2. **Create app → Deploy a public app from GitHub**: repositorio `bethavila17/dncp-riesgo-contrataciones`, rama `main`, archivo `app/streamlit_app.py`.
+3. **Deploy.** Community Cloud instala [`app/requirements.txt`](app/requirements.txt), no el de la raíz.
+
+Para actualizar la copia después de volver a correr el pipeline:
+
+```bash
+python scripts/exportar_datos_app.py --data-dir C:/dncp_lake
+git add app/datos && git commit -m "Actualizar datos de la app" && git push
+```
+
+Cada `git push` vuelve a publicar la app automáticamente.
 
 ## Limitaciones
 
