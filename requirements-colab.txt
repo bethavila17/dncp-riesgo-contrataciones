@@ -1,0 +1,10 @@
+# Paquetes que Google Colab no trae o trae en versiones antiguas.
+# (pandas, numpy, scikit-learn, torch, matplotlib, networkx y requests ya vienen instalados)
+duckdb>=1.1
+pyarrow>=14
+orjson>=3.9
+shap>=0.48
+xgboost>=2.0
+lightgbm>=4.0
+statsmodels>=0.14
+pyyaml>=6.0

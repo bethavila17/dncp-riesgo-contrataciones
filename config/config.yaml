@@ -1,0 +1,101 @@
+# =============================================================================
+# Configuración central del proyecto
+# Detección de riesgo en contrataciones públicas (DNCP - Paraguay)
+# =============================================================================
+# Todos los módulos y notebooks leen este archivo. Para pruebas rápidas se puede
+# sobrescribir con variables de entorno:
+#   DNCP_DATA_DIR  -> carpeta del data lake (por defecto ./data)
+#   DNCP_ANIOS     -> años a descargar, separados por coma (ej. "2025")
+
+proyecto:
+  nombre: dncp-riesgo-contrataciones
+  semilla: 2025
+
+datos:
+  # Raíz del data lake (capas bronze / silver / gold). Relativa a la raíz del repo.
+  dir: data
+
+# -----------------------------------------------------------------------------
+# FUENTES DE DATOS (captura multifuente)
+# -----------------------------------------------------------------------------
+fuentes:
+  # Fuente 1 - Descarga masiva (batch) de registros OCDS de la DNCP.
+  # Un archivo JSON Lines comprimido por año: agrupa los procesos cuya última versión
+  # compilada cae en ese año (cada proceso aparece en un único archivo).
+  ocp_registry:
+    url: "https://data.open-contracting.org/en/publication/63/download?name={archivo}"
+    anios: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+  # Fuente 2 - API REST OCDS v3 de la DNCP (micro-lotes, datos actualizados cada hora).
+  # Sin credenciales permite ~15 llamadas por minuto. Con un request token del portal
+  # (variable de entorno DNCP_REQUEST_TOKEN) se obtiene un access token OAuth.
+  api_dncp:
+    url_base: "https://www.contrataciones.gov.py/datos/api/v3/doc"
+    llamadas_por_minuto: 14
+    timeout_seg: 60
+
+  # Fuente 3 - Módulo de protestas, denuncias e investigaciones del portal DNCP (CSV por año).
+  # Cada CSV trae su huella SHA-256, que se verifica al normalizar.
+  protestas_dncp:
+    url: "https://www.contrataciones.gov.py/images/opendata-v3/final/ocds/{anio}/com-masivo.zip"
+    anios: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+  # Fuente 4 - API del Banco Mundial: tipo de cambio e inflación (IPC) de Paraguay,
+  # para convertir USD a guaraníes y expresar montos en guaraníes constantes.
+  banco_mundial:
+    url: "https://api.worldbank.org/v2/country/PRY/indicator/{indicador}?format=json&per_page=100"
+    indicadores:
+      tipo_cambio: PA.NUS.FCRF
+      ipc: FP.CPI.TOTL
+
+# -----------------------------------------------------------------------------
+# PROCESAMIENTO
+# -----------------------------------------------------------------------------
+procesamiento:
+  fecha_desde: "2020-01-01"     # procesos con inicio de convocatoria desde esta fecha
+  anio_base_precios: 2025       # los montos se expresan en guaraníes constantes de este año
+  ventana_historica_dias: 365   # ventana para indicadores históricos (concentración, recurrencia)
+  procesos_por_lote: 2000       # tamaño del lote al normalizar el JSON (controla el uso de RAM)
+  min_obs_precio_referencia: 10 # mínimo de observaciones para el precio de referencia de un ítem
+
+# -----------------------------------------------------------------------------
+# MODELOS
+# -----------------------------------------------------------------------------
+modelos:
+  # Etiqueta de referencia: proceso con protesta, denuncia o investigación de la DNCP
+  # (se excluyen los avenimientos, que son conflictos de la etapa de ejecución).
+  etiqueta: y_queja
+  # Validación temporal: se aprende con el pasado y se evalúa con el año 2025 completo.
+  fecha_inicio_entrenamiento: "2021-01-01"  # 2020 solo alimenta los indicadores históricos
+  fecha_corte_test: "2025-01-01"            # entrenamiento: 2021-2024
+  fecha_fin_test: "2026-01-01"              # prueba: 2025 | 2026 = procesos nuevos a puntuar
+  contaminacion: 0.05                       # 5 % superior = capacidad de revisión de auditoría
+  k_precision: [100, 250, 500]              # precision@k para priorizar auditorías
+  busqueda_hiperparametros: false           # true = RandomizedSearchCV temporal (más lento)
+  iteraciones_busqueda: 8
+  # Estabilidad: se reentrena cada detector con submuestras distintas del entrenamiento
+  estabilidad_repeticiones: 5
+  estabilidad_fraccion: 0.5
+  # Regla de decisión: un detector es estable si su 5 % superior coincide al menos en este
+  # índice de Jaccard entre reentrenamientos.
+  jaccard_minimo: 0.5
+  # Empate técnico: diferencias de AUC-PR menores a este valor se desempatan por Precision@k
+  tolerancia_empate: 0.02
+  autoencoder:
+    epocas: 40
+    tamano_lote: 256
+    tasa_aprendizaje: 0.001
+  # Puntaje de riesgo de integridad (0-100): índice de reglas validado + mejor detector de anomalías
+  pesos_integridad:
+    reglas: 0.5
+    anomalias: 0.5
+
+# -----------------------------------------------------------------------------
+# PRONÓSTICO DE TENDENCIAS
+# -----------------------------------------------------------------------------
+series:
+  # El volcado anual de 2026 está incompleto desde abril de 2026 (procesos recientes aún
+  # no publicados completos), por eso la serie se corta antes.
+  fecha_fin: "2026-04-01"
+  horizonte_meses: 6
+  meses_backtest: 6

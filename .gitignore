@@ -1,0 +1,23 @@
+# Data lake (se genera al ejecutar el pipeline; puede pesar varios GB)
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+.pytest_cache/
+
+# Editores y configuración local
+.vscode/
+.idea/
+
+# Spark / sistema
+spark-warehouse/
+metastore_db/
+derby.log
+.DS_Store
+Thumbs.db
+~$*.docx
