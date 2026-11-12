@@ -38,7 +38,7 @@ from dncp_riesgo.pipeline import preparar  # noqa: E402
 FIG = RAIZ / "informe" / "figuras"
 SALIDA = RAIZ / "informe" / "Proyecto_III_BigData_DNCP.docx"
 AUTORES = ["Bethania Avila", "Arturo Fernández", "Gustavo Bogado"]
-REPO = "https://github.com/bethavila/dncp-riesgo-contrataciones"
+REPO = "https://github.com/bethavila17/dncp-riesgo-contrataciones"
 # Tiempo del pipeline completo medido desde la terminal (scripts/ejecutar_pipeline.py) en una
 # computadora personal con los archivos ya descargados (10/11/2026)
 TIEMPO_TERMINAL_MIN = 9.1

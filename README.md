@@ -1,6 +1,6 @@
 # Detección de riesgo en contrataciones públicas mediante Big Data y aprendizaje automático
 
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bethavila/dncp-riesgo-contrataciones/blob/main/notebooks/00_pipeline_completo.ipynb)
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bethavila17/dncp-riesgo-contrataciones/blob/main/notebooks/00_pipeline_completo.ipynb)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 
