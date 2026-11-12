@@ -5,7 +5,7 @@ error al pronosticarlos):
 
     Holt-Winters         suavizamiento exponencial, tendencia amortiguada + estacionalidad anual
     SARIMA "airline"     (0,1,1)(0,1,1)12, clásico para series mensuales con estacionalidad
-    Ingenuo estacional   el valor del mismo mes del año anterior (línea base)
+    Estacional simple    repite el valor del mismo mes del año anterior (seasonal naive, línea base)
 
 El modelo con menor MAPE en el backtest se reentrena con toda la serie y genera el
 pronóstico con intervalos de predicción al 80 % y 95 %. Las series de conteos y montos se
@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-MODELOS = ["Holt-Winters", "SARIMA", "Ingenuo estacional"]
+MODELOS = ["Holt-Winters", "SARIMA", "Estacional simple"]
 
 
 def _mape(real, pred) -> float:

@@ -1,8 +1,8 @@
 """Fuente 2: API REST OCDS v3 de la DNCP (ingesta incremental en micro-lotes).
 
 La descarga anual (fuente 1) cubre el histórico; la API permite traer los procesos que
-cambiaron en las últimas horas o días y puntuarlos sin esperar al siguiente volcado
-masivo. Es la vía de *velocidad* del sistema.
+cambiaron en las últimas horas o días y puntuarlos sin esperar a la siguiente descarga
+masiva. Es la vía de *velocidad* del sistema.
 
 Endpoints usados:
     GET /search/processes?fecha_desde=AAAA-MM-DD&fecha_hasta=...&tipo_fecha=fecha_release

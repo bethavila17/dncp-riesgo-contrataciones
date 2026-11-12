@@ -7,7 +7,7 @@
 **Proyecto III – Big Data · Maestría en Ciencia de Datos · Universidad Comunera (UCOM), Asunción – Paraguay**
 Autores: Bethania Avila, Arturo Fernández, Gustavo Bogado
 
-Sistema que captura, almacena, procesa y analiza los datos abiertos de la **Dirección Nacional de Contrataciones Públicas (DNCP)** de Paraguay (estándar OCDS, 2020–2026) para asignar a cada proceso una **prioridad de auditoría** explicable. Es un insumo para planificar auditorías: identifica patrones de riesgo para revisar, **no determina irregularidades**.
+Sistema que captura, almacena, procesa y analiza los datos abiertos de la **Dirección Nacional de Contrataciones Públicas (DNCP)** de Paraguay (estándar OCDS, 2020–2026) para asignar a cada proceso una **prioridad de auditoría** explicable. Detecta los procesos con señales de riesgo y los ordena para que el auditor sepa cuáles revisar primero; la confirmación de una irregularidad corresponde a la auditoría.
 
 📄 Informe completo: [`informe/Proyecto_III_BigData_DNCP.docx`](informe/Proyecto_III_BigData_DNCP.docx) ([PDF](informe/Proyecto_III_BigData_DNCP.pdf))
 
@@ -58,11 +58,11 @@ flowchart LR
 
 ## Medición cuantitativa de los algoritmos
 
-Las métricas se definieron **antes de entrenar**. No existe una etiqueta oficial de irregularidad: los casos de referencia son los procesos con protesta, denuncia o investigación de la DNCP. Validación temporal: **entrenamiento 2021–2024, prueba 2025**, procesos de 2026 como nuevos.
+Las métricas se definieron **antes de entrenar**. No existe una etiqueta oficial de irregularidad: se toman como referencia los **procesos cuestionados** (con protesta, denuncia o investigación de la DNCP). Validación temporal: **entrenamiento 2021–2024, prueba 2025**, procesos de 2026 como nuevos.
 
 | Métrica | Qué mide | Por qué |
 |---|---|---|
-| **AUC-PR** (principal) | Área bajo la curva precisión–exhaustividad | Adecuada con clases escasas (5–10 % de casos) |
+| **AUC-PR** (principal) | Área bajo la curva precisión–recall | Adecuada cuando los casos positivos son pocos (5–10 %) |
 | Precision@k, Lift@k | Aciertos entre los k procesos de mayor puntaje; mejora sobre el azar | El auditor revisa k procesos |
 | Recall y F1 al 5 % superior | Cobertura con capacidad de revisión fija | Simula la capacidad de auditoría |
 | ROC-AUC | Capacidad general de ordenar | Complementaria |
@@ -100,7 +100,7 @@ Las protestas miden **conflictividad**, no irregularidad (crecen con la cantidad
 
 ### Otros hallazgos
 
-- **Prioridad de auditoría:** el 5 % de procesos con mayor prioridad en 2025 concentra el **32,2 % del monto adjudicado**, con 77,8 % de oferente único (frente a 42,4 %) y el doble de casos de referencia.
+- **Prioridad de auditoría:** el 5 % de procesos con mayor prioridad en 2025 concentra el **32,2 % del monto adjudicado**, con 77,8 % de oferente único (frente a 42,4 %) y el doble de procesos cuestionados.
 - **Banderas validadas:** integran el índice el oferente único, la excepción, el adjudicado mayor al estimado (OR 1,74), el proveedor dominante (OR 1,35) y la publicación a fin de año (OR 1,34); se descartan la evaluación prolongada, el sobreprecio por ítem, el proveedor nuevo, la ampliación y el plazo corto.
 - **Competencia:** los procesos con oferente único pasaron de 26 % (2021) a 43 % (2025) y 48 % (2026), coincidiendo con la Ley 7021/2022; el pronóstico (SARIMA, MAPE 5,2 %) anticipa que se mantendrá cerca del 45–48 %.
 - **Redes:** 40 entidades con concentración alta (HHI ≥ 2.500) y 153 pares de proveedores con patrón de rotación (120) u oferta de cobertura (33).
@@ -162,8 +162,8 @@ Opciones útiles: `--anios 2025` (prueba rápida con un año), `--etapas gold mo
 
 ## Limitaciones
 
-- No existe una etiqueta oficial de irregularidad: la validación es de constructo, de estabilidad y contra casos de referencia.
-- El volcado anual de 2026 está incompleto desde abril de 2026; la API completa los procesos recientes con un límite de 15 llamadas por minuto.
+- No existe una etiqueta oficial de irregularidad: la validación es de constructo, de estabilidad y contra procesos cuestionados.
+- El archivo anual de 2026 está incompleto desde abril de 2026; la API completa los procesos recientes con un límite de 15 llamadas por minuto.
 - La Ley 7021/2022 cambió las modalidades en 2024; las comparaciones temporales deben leerse con esa ruptura.
 - Los patrones de red pueden tener explicaciones legítimas y requieren revisión documental.
 

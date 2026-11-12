@@ -353,8 +353,9 @@ def construir(cfg, lake, g) -> Informe:
           f"la prueba temporal 2025, frente a {n(sup.loc['Línea base: solo n.º de oferentes', 'AUC-PR'], 3)} de la línea "
           f"base). El 5 % de procesos con mayor prioridad de auditoría en 2025 concentra el "
           f"{n(perfil.iloc[1]['% del monto adjudicado'], 1)} % del monto adjudicado y un "
-          f"{n(perfil.iloc[1]['% oferente único'], 1)} % de oferente único. El resultado es un ranking explicable que "
-          f"orienta la auditoría; no determina irregularidades.")
+          f"{n(perfil.iloc[1]['% oferente único'], 1)} % de oferente único. El resultado es un ranking explicable de "
+          f"procesos con riesgo que indica cuáles conviene auditar primero; la confirmación de una irregularidad "
+          f"corresponde a la auditoría.")
     inf.p("**Palabras clave:** big data, contrataciones públicas, OCDS, data lake, detección de anomalías, "
           "Isolation Forest, SHAP, Paraguay.", sangria=False)
     inf.salto()
@@ -368,9 +369,8 @@ def construir(cfg, lake, g) -> Informe:
           "expuestos a ineficiencias y corrupción, por el volumen de recursos, la discrecionalidad de algunas decisiones "
           "y la cantidad de actores involucrados [1]. El control tradicional es mayormente retrospectivo: se apoya en "
           "denuncias y en revisiones manuales de expedientes seleccionados. Paraguay, en cambio, publica información "
-          "detallada de cada proceso bajo el estándar OCDS y es reconocido como uno de los países con mayor "
-          "disponibilidad de datos abiertos de compras públicas de la región [2]. Esa apertura permite pasar de la "
-          "revisión caso por caso a un monitoreo sistemático de toda la población de procesos.")
+          "detallada de cada proceso bajo el estándar OCDS, lo que permite pasar de la revisión caso por caso a un "
+          "monitoreo sistemático de toda la población de procesos.")
     inf.p("Aprovechar esa oportunidad exige resolver un problema de Big Data: los datos llegan como documentos JSON "
           "anidados que se actualizan cada hora, desde varias fuentes y con millones de objetos (ítems, documentos, "
           "pagos, oferentes). Este proyecto construye un sistema que captura, almacena, procesa y analiza esos datos "
@@ -379,25 +379,24 @@ def construir(cfg, lake, g) -> Informe:
     inf.h("1.1. Planteamiento del problema", 2)
     inf.p(f"La DNCP publica la información de cada proceso, desde la planificación hasta la ejecución del contrato, "
           f"como datos abiertos OCDS. Solo el periodo 2020–2026 suma {n(tot.n_procesos)} registros de procesos con "
-          f"{n(tot.objetos / 1e6, 1)} millones de objetos anidados. Una aclaración metodológica: la cifra de "
-          f"10.891.516 que circulaba en versiones previas de esta propuesta no corresponde a procesos sino a la suma de "
-          f"filas de las 84 tablas CSV del archivo 2025; la unidad de análisis es el proceso (identificador ocid).")
+          f"{n(tot.objetos / 1e6, 1)} millones de objetos anidados. La unidad de análisis es el proceso "
+          f"(identificador ocid).")
     inf.p("La disponibilidad de datos no se traduce automáticamente en capacidad de control. El volumen supera la "
           "capacidad de revisión manual de los organismos de control y el enfoque retrospectivo reduce la capacidad "
           "preventiva del Estado: cuando se detecta una irregularidad, el contrato muchas veces ya fue adjudicado o "
-          "está en ejecución. La literatura asocia ciertos patrones con riesgos para la integridad [1], [3]: oferente "
+          "está en ejecución. La literatura asocia ciertos patrones con riesgos para la integridad [1], [2]: oferente "
           "único, concentración de adjudicaciones en pocos proveedores, diferencias entre el monto estimado y el "
           "adjudicado, plazos de convocatoria inusualmente cortos y participación recurrente de los mismos grupos de "
           "oferentes. En Paraguay, Auriol, Flochel y Straub encontraron que las instituciones más expuestas a la "
-          "corrupción canalizan una mayor parte de su presupuesto mediante contratos sin competencia [4]. Estos "
+          "corrupción canalizan una mayor parte de su presupuesto mediante contratos sin competencia [3]. Estos "
           "patrones solo se vuelven visibles al analizar en conjunto grandes volúmenes de datos históricos.")
-    inf.p("Además, en febrero de 2024 entró en vigencia la Ley N.º 7021/2022 [5], que reemplazó las modalidades de la "
-          "Ley N.º 2051/2003 [6], lo que obliga a interpretar con cuidado cualquier comparación temporal. El trabajo no "
+    inf.p("Además, en febrero de 2024 entró en vigencia la Ley N.º 7021/2022 [4], que reemplazó las modalidades de la "
+          "Ley N.º 2051/2003 [5], lo que obliga a interpretar con cuidado cualquier comparación temporal. El trabajo no "
           "busca determinar la existencia de fraude o corrupción, cuya constatación corresponde a los órganos "
           "competentes, sino identificar y priorizar procesos con indicadores de riesgo como insumo para la auditoría.")
 
     inf.h("1.2. Caracterización como problema de Big Data", 2)
-    inf.p("El problema reúne las características que definen a Big Data [18]. El trabajo resuelve principalmente el "
+    inf.p("El problema reúne las características que definen a Big Data [17]. El trabajo resuelve principalmente el "
           "**volumen** y la **velocidad**, y como tercera dimensión la **variedad**; la veracidad se trata como "
           "requisito de calidad. La Tabla 1 resume cómo se presenta cada dimensión y qué componente del sistema la "
           "resuelve.")
@@ -488,15 +487,15 @@ def construir(cfg, lake, g) -> Informe:
 
     inf.h("2.3. Captura multifuente", 2)
     fuentes = pd.DataFrame([
-        ["1. OCDS masivo (OCP Data Registry)", "JSON Lines anidado, un archivo por año", "Batch mensual", "Histórico 2020–2026"],
-        ["2. API REST OCDS v3 de la DNCP", "JSON por proceso", "Cada hora (micro-lotes)", "Procesos nuevos (velocidad)"],
-        ["3. Protestas y denuncias (DNCP)", "ZIP con CSV y huellas SHA-256", "Diaria", "Casos de referencia"],
-        ["4. Banco Mundial (API)", "JSON", "Anual", "Tipo de cambio e IPC"],
+        ["1. OCDS masivo (OCP Data Registry) [7]", "JSON Lines anidado, un archivo por año", "Batch mensual", "Histórico 2020–2026"],
+        ["2. API REST OCDS v3 de la DNCP [6]", "JSON por proceso", "Cada hora (micro-lotes)", "Procesos nuevos (velocidad)"],
+        ["3. Protestas y denuncias (DNCP) [6]", "ZIP con CSV y huellas SHA-256", "Diaria", "Procesos cuestionados"],
+        ["4. Banco Mundial (API) [8]", "JSON", "Anual", "Tipo de cambio e IPC"],
     ], columns=["Fuente", "Formato", "Frecuencia", "Uso"])
     inf.tabla(fuentes, "Fuentes de datos integradas", anchos=[5.0, 4.5, 3.2, 3.5])
     inf.p("Cada archivo anual agrupa los procesos cuya última versión compilada cae en ese año, de modo que cada "
-          "proceso aparece en un único archivo (se verificó que no hay ocid duplicados). La descarga es idempotente: "
-          "no repite archivos ya presentes y registra en un manifiesto el tamaño y la huella SHA-256 de cada uno. Los "
+          "proceso aparece en un único archivo (se verificó que no hay ocid duplicados). La descarga no repite "
+          "archivos ya presentes y registra en un manifiesto el tamaño y la huella SHA-256 de cada uno. Los "
           "CSV del módulo de protestas se comparan con las huellas que publica la DNCP. La API se consulta respetando "
           "su límite de 15 llamadas por minuto sin credenciales (o con token OAuth cuando se dispone).")
 
@@ -504,15 +503,15 @@ def construir(cfg, lake, g) -> Informe:
     inf.p("**Bronze** guarda los datos tal como llegan; **silver** contiene siete tablas normalizadas y tipadas "
           "(procesos, oferentes, adjudicaciones, contratos, ítems, partes y quejas) en Parquet con compresión Zstd, "
           "particionadas por lote de ingesta; **gold** contiene indicadores, puntajes, evaluaciones, redes y "
-          "pronósticos. El catálogo de consulta es DuckDB [19]: vistas SQL sobre los Parquet sin copiarlos, que "
-          "deduplican cada proceso quedándose con su versión más reciente (un mismo proceso puede llegar por el "
+          "pronósticos. El catálogo de consulta es DuckDB [18]: vistas SQL sobre los Parquet sin copiarlos, que "
+          "eliminan duplicados y se quedan con la versión más reciente de cada proceso (un mismo proceso puede llegar por el "
           "archivo anual y por la API). El mismo diseño funciona en disco local, Google Drive o un bucket (S3/GCS) y "
-          "lo lee también Apache Spark [20].")
+          "lo lee también Apache Spark [19].")
 
     inf.h("2.5. Procesamiento y calidad de datos", 2)
     inf.p("El JSON se lee en streaming (una línea a la vez, la memoria no depende del tamaño del archivo) y los "
-          "archivos anuales se procesan en paralelo, uno por núcleo. Durante la normalización se inventarían todos los "
-          "objetos anidados para dimensionar el volumen. Los montos se convierten a guaraníes constantes de 2025 con "
+          "archivos anuales se procesan en paralelo, uno por núcleo. Durante la normalización se cuentan todos los "
+          "objetos anidados para medir el volumen. Los montos se convierten a guaraníes constantes de 2025 con "
           "el tipo de cambio y el IPC del Banco Mundial. Se aplican reglas de calidad que no eliminan registros sino "
           "que anulan el valor dudoso y lo registran: corrección de adjudicaciones en guaraníes declaradas como USD, "
           "montos adjudicados mayores a diez veces el estimado, plazos fuera de [0; 365] días y fechas de "
@@ -527,32 +526,33 @@ def construir(cfg, lake, g) -> Informe:
                                  columns=["etapa", "Bandera", "descripcion"]), tb], ignore_index=True)
     tb.columns = ["Etapa", "Bandera", "Regla operativa"]
     inf.tabla(tb, "Banderas rojas candidatas por etapa del proceso", anchos=[3.0, 4.0, 9.0])
-    inf.p("Siguiendo a Fazekas y Kocsis [3], se estima una regresión logística del oferente único sobre las demás "
+    inf.p("Siguiendo a Fazekas y Kocsis [2], se estima una regresión logística del oferente único sobre las demás "
           "banderas, controlando por modalidad, categoría, año y logaritmo del monto, con errores estándar robustos "
           "(HC1), usando solo el periodo de entrenamiento. Una bandera con odds ratio mayor que 1 y p < 0,05 se "
           "comporta como indicador de riesgo e integra el índice compuesto (CRI); las demás se informan pero no se "
-          "suman, porque no todas las banderas habituales funcionan igual en todos los contextos [10]. El oferente "
+          "suman, porque no todas las banderas habituales funcionan igual en todos los contextos [9]. El oferente "
           "único y la contratación por excepción integran el índice por definición. Los indicadores históricos "
           "(dependencia entidad–proveedor, recurrencia, proveedor nuevo) son point-in-time: solo usan información "
           "anterior a la fecha de cada proceso, en una ventana de 365 días que excluye al propio proceso.")
 
     inf.h("2.7. Detección de anomalías", 2)
-    inf.p("Se comparan tres detectores no supervisados entrenados con el periodo 2021–2024, sobre las mismas "
+    inf.p("Se comparan tres detectores no supervisados, un enfoque ya aplicado a la detección de fraude en compras "
+          "públicas [11], entrenados con el periodo 2021–2024 sobre las mismas "
           "variables de las etapas de convocatoria, adjudicación y contrato:")
     inf.lista([
-        "**Isolation Forest global** [11]: aísla observaciones mediante particiones aleatorias; las raras requieren menos particiones (300 árboles, 256 observaciones por árbol).",
+        "**Isolation Forest global** [10]: aísla observaciones mediante particiones aleatorias; las raras requieren menos particiones (300 árboles, 256 observaciones por árbol).",
         "**Isolation Forest por modalidad**: un bosque por modalidad, para que la rareza se mida frente a procesos comparables y no se confunda «grande» con «anómalo».",
-        "**Autoencoder** [21]: red neuronal que comprime cada proceso a 8 dimensiones y lo reconstruye; el error de reconstrucción mide qué tan atípico es y el error por variable indica por qué.",
+        "**Autoencoder** [20]: red neuronal que comprime cada proceso a 8 dimensiones y lo reconstruye; el error de reconstrucción mide qué tan atípico es y el error por variable indica por qué.",
     ])
 
     inf.h("2.8. Medición cuantitativa de los algoritmos: métricas y regla de decisión", 2)
     inf.p("Las métricas se definieron antes de entrenar. Como no existe una etiqueta oficial de irregularidad, se "
-          "usan como casos de referencia los procesos con protesta, denuncia o investigación de la DNCP (se excluyen "
-          "los avenimientos, que son conflictos de la etapa de ejecución). Son entre 5 % y 10 % de los procesos, por lo "
+          "toman como referencia los procesos con protesta, denuncia o investigación de la DNCP, que en adelante se "
+          "llaman procesos cuestionados (se excluyen los avenimientos, que son conflictos de la etapa de ejecución). Son entre 5 % y 10 % de los procesos, por lo "
           "que la exactitud (accuracy) no sirve: un modelo que declare «ningún proceso es riesgoso» acertaría más del "
           "90 %. Cada puntaje se evalúa como un ranking de priorización en el periodo de prueba (Tabla 4).")
     metr = pd.DataFrame([
-        ["AUC-PR (principal)", "Área bajo la curva precisión–exhaustividad", "Adecuada con clases escasas [22]; su referencia es la tasa base"],
+        ["AUC-PR (principal)", "Área bajo la curva precisión–recall", "Adecuada cuando los casos positivos son pocos [21]; se compara con la tasa base"],
         ["Precision@k y Lift@k", "Aciertos entre los k procesos de mayor puntaje; mejora sobre el azar", "El auditor revisa k procesos"],
         ["Recall y F1 al 5 % superior", "Cobertura y equilibrio revisando el 5 % de los procesos", "Simula una capacidad de auditoría fija"],
         ["ROC-AUC", "Capacidad general de ordenar", "Complementaria; optimista con clases desbalanceadas"],
@@ -571,12 +571,12 @@ def construir(cfg, lake, g) -> Informe:
           "oferentes y solo el monto estimado.")
 
     inf.h("2.9. Riesgo de impugnación (modelo supervisado)", 2)
-    inf.p("Siguiendo la advertencia sobre etiquetas incompletas o sesgadas de Gallego, Rivero y Martínez [14], las "
+    inf.p("Siguiendo la advertencia sobre etiquetas incompletas o sesgadas de Gallego, Rivero y Martínez [13], las "
           "protestas no se usan como etiqueta de «fraude» sino de conflictividad: se entrena un modelo de riesgo de "
-          "impugnación con regresión logística, XGBoost [23] y LightGBM [13], solo con variables disponibles al "
+          "impugnación con regresión logística, XGBoost [22] y LightGBM [12], solo con variables disponibles al "
           "momento de la adjudicación (las posteriores, como la duración de la evaluación o las enmiendas del "
           "contrato, pueden ser consecuencia de una protesta y se excluyen para evitar fuga de información). Los "
-          "modelos de árboles usan early stopping sobre el último 20 % del periodo de entrenamiento. Este resultado se "
+          "modelos de árboles usan parada temprana (early stopping) sobre el último 20 % del periodo de entrenamiento. Este resultado se "
           "informa aparte del riesgo de integridad.")
 
     inf.h("2.10. Puntaje final, explicabilidad y redes", 2)
@@ -585,17 +585,18 @@ def construir(cfg, lake, g) -> Informe:
           f"detector de anomalías elegido ({n(100 * w['anomalias'])} %), ambos respecto de la distribución del "
           "entrenamiento. La **prioridad de auditoría** lo pondera por la exposición económica: prioridad = integridad × "
           "(0,5 + 0,5 × percentil del monto adjudicado). Nivel alto = 5 % superior; medio = siguiente 15 %. Cada "
-          "proceso trae sus banderas activas, las tres variables que más pesan en su anomalía (valores SHAP [15] del "
+          "proceso trae sus banderas activas, las tres variables que más pesan en su anomalía (valores SHAP [14] del "
           "bosque o error de reconstrucción del autoencoder) y los factores SHAP de su riesgo de impugnación.")
     inf.p("**Redes.** (a) Concentración de cada entidad con el índice de Herfindahl-Hirschman (umbrales 1.500 y 2.500). "
           "(b) Red de co-participación: dos proveedores se conectan si ofertaron en el mismo llamado; se detectan "
-          "comunidades con Louvain [16] y, solo en llamados con un único adjudicado (en los llamados por lote varios "
+          "comunidades con Louvain [15] y, solo en llamados con un único adjudicado (en los llamados por lote varios "
           "ganan a la vez), pares con patrón de rotación (ambos ganan, casi nunca un tercero) u oferta de cobertura "
-          "(uno gana casi siempre y el otro nunca) [17]. Son señales para revisión documental, no prueba de colusión.")
+          "(uno gana casi siempre y el otro nunca) [16]. Son señales para revisión documental, no prueba de colusión.")
 
     inf.h("2.11. Pronóstico de tendencias", 2)
     inf.p("Para las series mensuales de procesos, monto adjudicado y proporción de oferente único se comparan "
-          "Holt-Winters, SARIMA (0,1,1)(0,1,1)12 y un modelo ingenuo estacional con backtesting de seis meses [24]; "
+          "Holt-Winters, SARIMA (0,1,1)(0,1,1)12 y un modelo estacional simple (seasonal naive: repite el valor del "
+          "mismo mes del año anterior) con una prueba retrospectiva (backtesting) de seis meses [23]; "
           "el de menor error porcentual absoluto medio (MAPE) pronostica los seis meses siguientes con intervalos de "
           "predicción al 80 % y 95 %. Las series de conteos y montos se modelan en escala logarítmica.")
 
@@ -656,13 +657,13 @@ def construir(cfg, lake, g) -> Informe:
           f"estudio no permite atribuirlo a la ley: puede reflejar también la reserva de mercado para mipymes o cambios "
           f"en la carga de datos.")
     inf.figura("fig02_estacionalidad.png", "Convocatorias por mes, 2020–2026", ancho=15)
-    inf.figura("fig03_oferente_unico.png", "Procesos con oferente único por año (IC de Wilson al 95 %)", ancho=13)
+    inf.figura("fig03_oferente_unico.png", "Procesos con oferente único por año (intervalo de confianza del 95 %, método de Wilson)", ancho=13)
     inf.figura("fig04_lorenz.png", "Concentración del monto adjudicado entre proveedores (curva de Lorenz)", ancho=9)
     inf.p("La proporción de procesos con protesta o investigación crece con la cantidad de oferentes (Figura 6): más "
           "oferentes implican más perdedores con incentivo a impugnar. Por eso las protestas no son una etiqueta "
           "válida de irregularidad —un detector de «fraude» entrenado con ellas penalizaría a los procesos más "
           "competitivos— y se usan solo para lo que miden: la conflictividad del proceso.")
-    inf.figura("fig05_protestas_oferentes.png", "Casos de referencia según la cantidad de oferentes", ancho=13)
+    inf.figura("fig05_protestas_oferentes.png", "Procesos cuestionados según la cantidad de oferentes", ancho=13)
 
     inf.h("3.4. Banderas rojas y su validación", 2)
     tvb = val.copy()
@@ -674,13 +675,14 @@ def construir(cfg, lake, g) -> Informe:
     inf.tabla(tvb[["etapa", "Bandera", "Prevalencia", "OR (IC 95 %)", "p", "Integra el CRI"]].rename(columns={"etapa": "Etapa"}),
               "Validación de constructo: odds ratio de oferente único por bandera (entrenamiento 2021–2024)",
               anchos=[2.6, 3.8, 2.2, 3.8, 1.8, 2.2],
-              nota="Regresión logística con controles por modalidad, categoría, año y logaritmo del monto; errores HC1.")
+              nota="Prevalencia: porcentaje de procesos evaluables que tienen la bandera activa. Regresión logística con "
+                   "controles por modalidad, categoría, año y logaritmo del monto; errores HC1.")
     inf.p(f"Integran el CRI, además del oferente único y la excepción, {len(validas)} banderas: "
           + ", ".join(validas["nombre"].str.lower()) + ". Se descartan "
           + ", ".join(descartadas["nombre"].str.lower())
           + ". La evaluación prolongada se asocia con más competencia (hay más ofertas que evaluar) y el sobreprecio "
             "por ítem no se comporta como indicador de competencia restringida; construir el índice sin esta "
-            "validación habría mezclado señales de signo opuesto [10].")
+            "validación habría mezclado señales de signo opuesto [9].")
     inf.figura("fig06_validacion_banderas.png", "Odds ratio de oferente único por bandera (azul: integran el CRI)", ancho=14)
 
     inf.h("3.5. Comparación cuantitativa de los detectores de anomalías", 2)
@@ -696,20 +698,20 @@ def construir(cfg, lake, g) -> Informe:
     td["Seg."] = td["Seg."].map(lambda x: n(x, 1))
     inf.tabla(td, "Detectores de anomalías en la prueba temporal 2025 (procesos con 2 o más oferentes)",
               anchos=[5.2, 1.8, 1.6, 1.8, 1.8, 2.0, 1.4],
-              nota=f"Tasa base de casos de referencia: {pct(tb_comp)}. Jaccard: coincidencia del 5 % superior entre "
+              nota=f"Tasa base de procesos cuestionados: {pct(tb_comp)}. Jaccard: coincidencia del 5 % superior entre "
                    f"cinco reentrenamientos con submuestras distintas. El CRI se incluye como referencia.")
     inf.p(f"**Resultado de la regla de decisión:** {dec.loc['detector de anomalías', 'motivo']}. El Isolation Forest "
-          f"global ubica entre sus 100 procesos más anómalos {n(100 * det.loc[mejor_det, 'P@100 (≥2 oferentes)'])} casos "
-          f"de referencia, {n(det.loc[mejor_det, 'Lift@100 (≥2 oferentes)'], 1)} veces la tasa base, y su ranking es "
+          f"global ubica entre sus 100 procesos más anómalos {n(100 * det.loc[mejor_det, 'P@100 (≥2 oferentes)'])} procesos "
+          f"cuestionados,{n(det.loc[mejor_det, 'Lift@100 (≥2 oferentes)'], 1)} veces la tasa base, y su ranking es "
           f"estable (Spearman {n(det.loc[mejor_det, 'Spearman entre reentrenamientos'], 2)} entre reentrenamientos). "
           f"El Autoencoder obtiene un AUC-PR intermedio pero su 5 % superior cambia demasiado de una corrida a otra "
           f"(Jaccard {n(det.loc['Autoencoder', 'Jaccard top 5%'], 2)}), por lo que no es confiable para priorizar. El bosque "
           f"por modalidad es estable pero menos discriminante: al comparar cada proceso solo con su modalidad pierde "
           f"la señal de los procesos atípicos para el sistema en su conjunto. El CRI es el más estable (es un conjunto "
-          f"de reglas) pero, por sí solo, no ordena bien los casos de referencia, porque mide competencia restringida "
+          f"de reglas) pero, por sí solo, no ordena bien los procesos cuestionados, porque mide competencia restringida "
           f"y las protestas ocurren justamente donde hay competencia; por eso se combina con el detector.")
     inf.figura("fig07_comparacion_detectores.png", "AUC-PR y Precision@100 de cada método (prueba 2025, ≥2 oferentes)",
-               ancho=16, nota="La línea punteada marca la tasa base de casos de referencia (lo que se obtendría al azar).")
+               ancho=16, nota="La línea punteada marca la tasa base de procesos cuestionados (lo que se obtendría al azar).")
     inf.figura("fig08_estabilidad.png", "Estabilidad de los rankings entre reentrenamientos", ancho=12,
                nota=f"La línea roja marca el umbral mínimo de estabilidad ({n(cfg['modelos']['jaccard_minimo'], 1)}).")
 
@@ -741,7 +743,7 @@ def construir(cfg, lake, g) -> Informe:
           f"más oferente único y {n(perfil.iloc[1]['% sobreprecio'] / perfil.iloc[0]['% sobreprecio'], 1)} veces más "
           f"sobreprecio que el conjunto: es lo que necesita un auditor con recursos limitados. En la prueba, la "
           f"prioridad alcanza un AUC-PR de {n(det.loc['Prioridad de auditoría', 'AUC-PR (≥2 oferentes)'], 3)} frente a "
-          f"casos de referencia en procesos con competencia.")
+          f"procesos cuestionados con competencia (dos o más oferentes).")
 
     inf.h("3.8. Redes", 2)
     nh = hhi["concentracion"].value_counts()
@@ -752,7 +754,7 @@ def construir(cfg, lake, g) -> Informe:
           f"{int(pares.rotacion.sum())} pares con patrón de rotación y {int(pares.cobertura.sum())} con patrón de oferta "
           f"de cobertura (Figura 11). Estos patrones pueden tener explicaciones legítimas (especialización, "
           f"capacidad) y requieren revisión documental.")
-    inf.figura("fig10_cribado_pares.png", "Cribado de pares de proveedores con 10 o más llamados compartidos", ancho=11)
+    inf.figura("fig10_pares_proveedores.png", "Pares de proveedores con 10 o más llamados compartidos: rotación y cobertura", ancho=11)
     inf.figura("fig11_comunidad.png", "Comunidad de co-participación con más pares sospechosos", ancho=15)
 
     inf.h("3.9. Tendencias", 2)
@@ -761,9 +763,9 @@ def construir(cfg, lake, g) -> Informe:
                                    "pct_oferente_unico": "% oferente único"})
     for c in bt.columns[1:-1]:
         bt[c] = bt[c].map(lambda x: n(x, 1))
-    bt.columns = ["Serie", "MAPE Holt-Winters", "MAPE SARIMA", "MAPE ingenuo estacional", "Modelo elegido"]
-    inf.tabla(bt, "Error del backtesting de seis meses (MAPE, %)", anchos=[4, 2.8, 2.6, 3.2, 3.4])
-    inf.p(f"La estacionalidad domina las series de actividad: el modelo ingenuo estacional, que repite el mismo mes del "
+    bt.columns = ["Serie", "MAPE Holt-Winters", "MAPE SARIMA", "MAPE estacional simple", "Modelo elegido"]
+    inf.tabla(bt, "Error de la prueba retrospectiva de seis meses (MAPE, %)", anchos=[4, 2.8, 2.6, 3.2, 3.4])
+    inf.p(f"La estacionalidad domina las series de actividad: el modelo estacional simple, que repite el mismo mes del "
           "año anterior, es el más preciso para la cantidad de convocatorias, y los montos son muy volátiles porque "
           "pocos contratos grandes dominan cada mes. En cambio, la proporción de oferente único se pronostica con "
           "error bajo: el modelo anticipa que se mantendrá cerca del {rango_pou} en los próximos meses, lo que refuerza la "
@@ -772,7 +774,7 @@ def construir(cfg, lake, g) -> Informe:
 
     inf.h("3.10. Discusión", 2)
     inf.p("El valor de los datos abiertos de la DNCP está distribuido en varias fuentes y en millones de objetos "
-          "anidados; integrarlos exigió una arquitectura explícita (captura idempotente, data lake por capas, "
+          "anidados; integrarlos exigió una arquitectura explícita (captura que no duplica descargas, data lake por capas, "
           "catálogo SQL) y controles de integridad y calidad. Con esa arquitectura el procesamiento completo toma "
           "minutos en un entorno gratuito y los procesos nuevos se puntúan apenas se publican: el cuello de botella no "
           "es el hardware sino el diseño del pipeline y el límite de la API.")
@@ -784,8 +786,8 @@ def construir(cfg, lake, g) -> Informe:
 
     inf.h("3.11. Limitaciones", 2)
     inf.lista([
-        "**Ausencia de etiqueta de verdad.** La validación es de constructo, de estabilidad y contra casos de referencia, no de exactitud sobre fraude.",
-        "**Cobertura reciente incompleta.** El volcado anual de 2026 está incompleto desde abril de 2026; la API completa los procesos recientes, pero con un límite de llamadas.",
+        "**Ausencia de etiqueta de verdad.** La validación es de constructo, de estabilidad y contra procesos cuestionados, no de exactitud sobre fraude.",
+        "**Cobertura reciente incompleta.** El archivo anual de 2026 está incompleto desde abril de 2026; la API completa los procesos recientes, pero con un límite de llamadas.",
         "**Cambio normativo.** La Ley 7021/2022 cambió las modalidades en 2024; las comparaciones temporales deben leerse con esa ruptura.",
         "**Calidad de algunos campos.** Fechas inconsistentes y número de oferentes faltante en parte de los procesos.",
         "**Patrones de red.** Un patrón de co-participación puede tener explicaciones legítimas y requiere revisión documental.",
@@ -818,7 +820,7 @@ def construir(cfg, lake, g) -> Informe:
     inf.lista([
         "Extender el sistema al histórico completo 2011–2026 y ejecutar el procesamiento distribuido en un clúster.",
         "Automatizar la actualización periódica (ingesta horaria programada y reentrenamiento mensual).",
-        "Incorporar los precios de cada oferta para calcular screens de colusión basados en la distribución de precios [17].",
+        "Incorporar los precios de cada oferta para calcular indicadores de colusión basados en la distribución de precios (screens) [16].",
         "Validar con auditores una muestra del 5 % superior del ranking para estimar la precisión real del sistema.",
     ])
 
@@ -827,7 +829,6 @@ def construir(cfg, lake, g) -> Informe:
     inf.centro("REFERENCIAS BIBLIOGRÁFICAS", negrita=True)
     refs = [
         "Open Contracting Partnership, «Red flags in public procurement: A guide to using data to detect and mitigate risks», 2024. Disponible: https://open-contracting.org/redflags",
-        "La Nación, «Paraguay, país con mayor disponibilidad de datos abiertos en las compras públicas», 30 ago. 2025.",
         "M. Fazekas y G. Kocsis, «Uncovering high-level corruption: Cross-national objective corruption risk indicators using public procurement data», British Journal of Political Science, vol. 50, n.º 1, pp. 155–164, 2020, doi: 10.1017/S0007123417000461.",
         "E. Auriol, T. Flochel y S. Straub, «Public procurement and rent-seeking: The case of Paraguay», World Development, vol. 77, pp. 395–407, 2016, doi: 10.1016/j.worlddev.2015.09.001.",
         "Congreso de la Nación Paraguaya, Ley N.º 7021/2022 De Suministro y Contrataciones Públicas, Asunción, 2022.",

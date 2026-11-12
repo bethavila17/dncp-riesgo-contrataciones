@@ -3,7 +3,7 @@
 Las métricas se definieron antes de entrenar. Como no existe una etiqueta oficial de
 irregularidad, se combinan cuatro tipos de evidencia:
 
-1. Desempeño frente a casos de referencia (procesos con protesta, denuncia o investigación)
+1. Desempeño frente a procesos cuestionados (con protesta, denuncia o investigación)
    en el periodo de prueba, evaluando cada puntaje como un *ranking* de priorización:
      - AUC-PR (métrica principal; adecuada para clases escasas, Saito y Rehmsmeier, 2015)
      - ROC-AUC (complementaria)

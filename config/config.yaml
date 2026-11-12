@@ -94,7 +94,7 @@ modelos:
 # PRONÓSTICO DE TENDENCIAS
 # -----------------------------------------------------------------------------
 series:
-  # El volcado anual de 2026 está incompleto desde abril de 2026 (procesos recientes aún
+  # El archivo anual de 2026 está incompleto desde abril de 2026 (procesos recientes aún
   # no publicados completos), por eso la serie se corta antes.
   fecha_fin: "2026-04-01"
   horizonte_meses: 6

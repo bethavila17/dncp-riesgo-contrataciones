@@ -1,7 +1,7 @@
 """Fuente 3: módulo de protestas, denuncias e investigaciones del portal de la DNCP.
 
 La DNCP publica por año un ZIP con CSV aplanados (records, complaints, events,
-intervenients, documents). Se usa como fuente independiente de *casos de referencia*:
+intervenients, documents). Se usa como fuente independiente de *procesos cuestionados*:
 procesos impugnados por oferentes (protestas) o investigados por la DNCP. Sirve como
 etiqueta para los modelos supervisados y para validar la consistencia con las quejas que
 vienen dentro de los registros OCDS (veracidad).

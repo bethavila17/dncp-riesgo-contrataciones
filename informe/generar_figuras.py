@@ -94,8 +94,8 @@ def main():
     ax.scatter(marcados.gana_max, marcados.gana_min, s=8 + marcados.juntos_ganador_unico * 0.5,
                color=gr.NIVELES["Alto"], label="rotación o cobertura")
     ax.set_xlabel("victorias de la empresa que más gana (%)"); ax.set_ylabel("victorias de la otra (%)")
-    ax.legend(loc="upper left"); ax.set_title(f"Cribado de {len(p)} pares con ≥10 llamados compartidos")
-    gr.guardar(fig, "fig10_cribado_pares", FIG)
+    ax.legend(loc="upper left"); ax.set_title(f"{len(p)} pares de proveedores con ≥10 llamados compartidos")
+    gr.guardar(fig, "fig10_pares_proveedores", FIG)
     plt.close(fig)
 
     g, metricas = red_cooferentes(pares, cfg["proyecto"]["semilla"])
